@@ -21,11 +21,12 @@ import appdirs
 from PIL import Image
 from dateutil.tz import tzlocal
 
-from .utils import set_background, get_desktop_environment
+from himawaripy.utils import set_background, get_desktop_environment
 
+import ssl
 
 # Semantic Versioning: Major, Minor, Patch
-HIMAWARIPY_VERSION = (2, 1, 0)
+HIMAWARIPY_VERSION = (2, 2, 0)
 counter = None
 HEIGHT = 550
 WIDTH = 550
@@ -55,14 +56,14 @@ def download_chunk(args):
     global counter
 
     x, y, latest, level = args
-    url_format = "http://himawari8.nict.go.jp/img/D531106/{}d/{}/{}_{}_{}.png"
+    url_format = "https://himawari8-dl.nict.go.jp/himawari8/img/D531106/{}d/{}/{}_{}_{}.png"
     url = url_format.format(level, WIDTH, strftime("%Y/%m/%d/%H%M%S", latest), x, y)
 
     tiledata = download(url)
 
     # If the tile data is 2867 bytes, it is a blank "No Image" tile.
     if tiledata.__sizeof__() == 2867:
-        sys.exit('No image available for {}.'.format(strftime("%Y/%m/%d %H:%M:%S", latest)))
+        sys.exit("No image available for {}.".format(strftime("%Y/%m/%d %H:%M:%S", latest)))
 
     with counter.get_lock():
         counter.value += 1
@@ -74,29 +75,61 @@ def download_chunk(args):
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="set (near-realtime) picture of Earth as your desktop background",
-                                     epilog="http://labs.boramalper.org/himawaripy")
+    parser = argparse.ArgumentParser(
+        description="set (near-realtime) picture of Earth as your desktop background",
+        epilog="https://labs.boramalper.org/himawaripy",
+    )
 
     parser.add_argument("--version", action="version", version="%(prog)s {}.{}.{}".format(*HIMAWARIPY_VERSION))
 
     group = parser.add_mutually_exclusive_group()
 
-    group.add_argument("--auto-offset", action="store_true", dest="auto_offset", default=False,
-                       help="determine offset automatically")
-    group.add_argument("-o", "--offset", type=int, dest="offset", default=10,
-                       help="UTC time offset in hours, must be less than or equal to +10")
+    group.add_argument(
+        "--auto-offset", action="store_true", dest="auto_offset", default=False, help="determine offset automatically"
+    )
+    group.add_argument(
+        "-o",
+        "--offset",
+        type=int,
+        dest="offset",
+        default=10,
+        help="UTC time offset in hours, must be less than or equal to +10",
+    )
 
-    parser.add_argument("-l", "--level", type=int, choices=[4, 8, 16, 20], dest="level", default=4,
-                        help="increases the quality (and the size) of each tile. possible values are 4, 8, 16, 20")
-    parser.add_argument("-d", "--deadline", type=int, dest="deadline", default=6,
-                        help="deadline in minutes to download all the tiles, set 0 to cancel")
-    parser.add_argument("--save-battery", action="store_true", dest="save_battery", default=False,
-                        help="stop refreshing on battery")
-    parser.add_argument("--output-dir", type=str, dest="output_dir",
-                        help="directory to save the temporary background image",
-                        default=appdirs.user_cache_dir(appname="himawaripy", appauthor=False))
-    parser.add_argument("--dont-change", action="store_true", dest="dont_change", default=False,
-                        help="don't change the wallpaper (just download it)")
+    parser.add_argument(
+        "-l",
+        "--level",
+        type=int,
+        choices=[4, 8, 16, 20],
+        dest="level",
+        default=4,
+        help="increases the quality (and the size) of each tile. possible values are 4, 8, 16, 20",
+    )
+    parser.add_argument(
+        "-d",
+        "--deadline",
+        type=int,
+        dest="deadline",
+        default=6,
+        help="deadline in minutes to download all the tiles, set 0 to cancel",
+    )
+    parser.add_argument(
+        "--save-battery", action="store_true", dest="save_battery", default=False, help="stop refreshing on battery"
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=str,
+        dest="output_dir",
+        help="directory to save the temporary background image",
+        default=appdirs.user_cache_dir(appname="himawaripy", appauthor=False),
+    )
+    parser.add_argument(
+        "--dont-change",
+        action="store_true",
+        dest="dont_change",
+        default=False,
+        help="don't change the wallpaper (just download it)",
+    )
 
     args = parser.parse_args()
 
@@ -118,8 +151,8 @@ def is_discharging():
             status = f.readline().strip()
 
             return status == "Discharging"
-    elif sys.platform == 'darwin':
-        return b'discharging' in subprocess.check_output(["pmset", "-g", "batt"])
+    elif sys.platform == "darwin":
+        return b"discharging" in subprocess.check_output(["pmset", "-g", "batt"])
 
     else:
         sys.exit("Battery saving feature works only on linux or mac!\n")
@@ -130,7 +163,7 @@ def download(url):
 
     for i in range(1, 4):  # retry max 3 times
         try:
-            with urllib.request.urlopen(url) as response:
+            with urllib.request.urlopen(url, context=ssl.SSLContext(ssl.PROTOCOL_TLS)) as response:
                 return response.read()
         except Exception as e:
             exception = e
@@ -151,7 +184,7 @@ def thread_main(args):
     level = args.level  # since we are going to use it a lot of times
 
     print("Updating...")
-    latest_json = download("http://himawari8-dl.nict.go.jp/himawari8/img/D531106/latest.json")
+    latest_json = download("https://himawari8-dl.nict.go.jp/himawari8/img/D531106/latest.json")
     latest = strptime(json.loads(latest_json.decode("utf-8"))["date"], "%Y-%m-%d %H:%M:%S")
 
     print("Latest version: {} GMT.".format(strftime("%Y/%m/%d %H:%M:%S", latest)))

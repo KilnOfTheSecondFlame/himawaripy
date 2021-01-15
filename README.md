@@ -21,10 +21,8 @@ near-realtime picture of Earth.
 * GNOME 3
 * Cinnamon 2.8.8
 * KDE
-* Win10 1909 with python3.7
 
 ### Not Supported
-
 * any other desktop environments that are not mentioned above.
 
 ## Configuration
@@ -88,33 +86,17 @@ bgcolor=#000000
 
 ```
 # Install
-pip install --user himawaripy
+python3 -m pip install --user himawaripy
 
 # Test whether it's working
 himawaripy --auto-offset
 
-# Get the installation path of himawaripy by running the command
-which -- himawaripy
+# Set himawaripy to be called periodically using the provided systemd timer
+    ## Copy systemd configuration (on bash)
+    cp systemd/himawaripy.{service,timer} ~/.config/systemd/user/
 
-# Set himawaripy to be called periodically
-
-    ## Either set up a cronjob
-        crontab -e
-
-        ### Add the line:
-        */10 * * * * <INSTALLATION_PATH> # command line arguments here
-
-    ## OR, alternatively use the provided systemd timer
-
-        ### Configure
-        nano systemd/himawaripy.service
-        # Replace "<INSTALLATION_PATH>" with the output of the aforementioned command and command line arguments
-
-        ### Copy systemd configuration
-        cp systemd/himawaripy.{service,timer} ~/.config/systemd/user/
-
-        ### Enable and start the timer
-        systemctl --user enable --now himawaripy.timer
+    ## Enable and start the timer
+    systemctl --user enable --now himawaripy.timer
 ```
 
 ### For KDE Users
@@ -124,7 +106,7 @@ the pre-KDE 5.7 method can still be used.
 
 To unlock desktop widgets ([from the KDE userbase](https://userbase.kde.org/Plasma#Widgets)):
 > Open the Desktop Toolbox or the Panel Toolbox or right click on the Desktop - if you see an item labeled Unlock
-> Widgets then select that, and then proceed to add widgets to your Desktop or your Panel. 
+> Widgets then select that, and then proceed to add widgets to your Desktop or your Panel.
 
 #### Before KDE 5.7
 > So the issue here is that KDE does not support changing the desktop wallpaper
