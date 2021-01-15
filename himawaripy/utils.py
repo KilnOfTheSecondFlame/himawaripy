@@ -2,6 +2,9 @@ import os
 import re
 import sys
 import subprocess
+import win32api
+import win32gui
+from win32.lib import win32con
 from distutils.version import LooseVersion
 
 
@@ -19,6 +22,13 @@ def set_background(file_path):
                 'set the picture of aDesktop to "' + file_path + '"\nend repeat\nend tell',
             ]
         )
+    elif de == "windows":
+        key = win32api.RegOpenKeyEx(win32con.HKEY_CURRENT_USER,
+                                    "Control Panel\\Desktop", 0, win32con.KEY_SET_VALUE)
+        win32api.RegSetValueEx(key, "WallpaperStyle", 0, win32con.REG_SZ, "6")
+        # 2 for stretching, 0 for centering, 6 for fitting
+        win32api.RegSetValueEx(key, "TileWallpaper", 0, win32con.REG_SZ, "0")
+        win32gui.SystemParametersInfo(win32con.SPI_SETDESKWALLPAPER, file_path, 1 + 2)
     else:  # Linux
         # gsettings requires it.
         fetch_envvar("DBUS_SESSION_BUS_ADDRESS")
