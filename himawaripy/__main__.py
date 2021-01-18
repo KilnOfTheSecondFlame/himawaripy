@@ -203,7 +203,8 @@ def thread_main(args):
         png.paste(tile, (WIDTH * x, HEIGHT * y, WIDTH * (x + 1), HEIGHT * (y + 1)))
 
     for file in iglob(path.join(args.output_dir, "himawari-*.png")):
-        os.remove(file)
+        pass
+        # os.remove(file)
 
     output_file = path.join(args.output_dir, strftime("himawari-%Y%m%dT%H%M%S.png", requested_time))
     print("Saving to '%s'..." % (output_file,))
